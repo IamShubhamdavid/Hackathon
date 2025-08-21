@@ -1,6 +1,6 @@
 // src/components/Header.jsx
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);

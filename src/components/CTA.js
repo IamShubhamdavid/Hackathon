@@ -1,6 +1,6 @@
 // src/components/CTA.jsx
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 const CTA = () => {
   return (
