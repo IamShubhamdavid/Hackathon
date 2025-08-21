@@ -1,5 +1,5 @@
 // src/components/Features.js
-import { Colors } from 'chart.js';
+// import { Colors } from 'chart.js';
 import React from 'react';
 
 const featuresData = [
