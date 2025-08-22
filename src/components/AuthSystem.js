@@ -599,7 +599,7 @@ const AuthSystem = () => {
             userType: 'citizen'
           });
         }
-      }, 2000);
+      }, 3000);
     }
   };
 

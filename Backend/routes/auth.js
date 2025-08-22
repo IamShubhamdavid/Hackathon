@@ -1,88 +1,182 @@
-const express = require("express");
-
+const express = require('express');
 const jwt = require('jsonwebtoken');
-const authRouter = express.Router();
-const bcrypt = require("bcrypt");
-const User = require("../Models/user");
-const redisClient = require("../config/redis");
-// const {userAuth} = require('../middleware/userAuth');
+const crypto = require('crypto');
+const User = require('../Models');
+const { sendVerificationEmail } = require('../utils/emailService');
+const { protect } = require('../middleware/auth');
+const router = express.Router();
 
-// /auth/register
+// Generate JWT Token
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRE
+  });
+};
 
-// Reddis ke database mein hmko Blocked Token
+// Register User
+router.post('/register', async (req, res) => {
+  try {
+    const { firstName, lastName, email, password, userType } = req.body;
 
-authRouter.post("/register", async (req,res)=>{
-
-    try{
-
-        // Validate kya uske andar firstName
-        validUser(req.body);
-        
-        //  converting password into hashing
-       req.body.password = await bcrypt.hash(req.body.password,10);
-
-        await User.create(req.body);
-        res.send("User Registered Successfully");
+    // Check if user exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'User already exists with this email'
+      });
     }
-    catch(err){
-        res.send("Error "+ err.message);
+
+    // Create user
+    const user = await User.create({
+      firstName,
+      lastName,
+      email,
+      password,
+      userType
+    });
+
+    // Generate verification token
+    const verificationToken = crypto.randomBytes(20).toString('hex');
+    user.verificationToken = verificationToken;
+    await user.save();
+
+    // Send verification email
+    await sendVerificationEmail(user, verificationToken);
+
+    res.status(201).json({
+      success: true,
+      message: 'Registration successful. Please check your email for verification.',
+      data: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        userType: user.userType
+      }
+    });
+
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Login User
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Check if user exists and select password
+    const user = await User.findOne({ email }).select('+password');
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
     }
-})
 
-
-
-authRouter.post("/login", async(req,res)=>{
-
-    try{
-
-        // validate karna
-        
-        const people = await User.findOne({emailId:req.body.emailId});
-        
-        // if(!(req.body.emailId===people.emailId))
-        //     throw new Error("Invalid credentials");
-
-        const IsAllowed = people.verifyPassword(req.body.password);
-
-        if(!IsAllowed)
-            throw new Error("Invalid credentials");
-        
-
-        // jwt token 
-
-        const token = people.getJWT();
-
-        res.cookie("token",token);
-        res.send("Login Successfully");
+    // Check if user is verified
+    if (!user.isVerified) {
+      return res.status(401).json({
+        success: false,
+        message: 'Please verify your email before logging in'
+      });
     }
-    catch(err){
-        res.send("Error: "+err.message);
+
+    // Check password
+    const isPasswordMatch = await user.comparePassword(password);
+    if (!isPasswordMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
     }
-})
 
+    // Generate token
+    const token = generateToken(user._id);
 
-// /auth/logout
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      data: {
+        token,
+        user: {
+          id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          userType: user.userType,
+          isVerified: user.isVerified
+        }
+      }
+    });
 
-authRouter.post("/logout", async(req,res)=>{
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during login'
+    });
+  }
+});
 
-    try{
-        const{token}=req.cookies;
-        //console.log(token);
+// Verify Email
+router.get('/verify-email', async (req, res) => {
+  try {
+    const { token } = req.query;
 
-        const payload=jwt.decode(token);
-        //console.log(payload);
-
-        await redisClient.set(`token:${token}`,"Blocked");
-        //await redisClient.expire(`token:${token}`,1800);
-        await redisClient.expireAt(`token:${token}`,payload.exp);
-
-
-       res.cookie("token",null,{expires: new Date(Date.now())});
-       res.send("Logged Out Succesfully");
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Verification token is required'
+      });
     }
-    catch(err){
-        res.send("Error: "+err.message);
-    }
-})
 
-module.exports = {authRouter};
+    const user = await User.findOne({ verificationToken: token });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid verification token'
+      });
+    }
+
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Email verified successfully'
+    });
+
+  } catch (error) {
+    console.error('Email verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during email verification'
+    });
+  }
+});
+
+// Get Current User
+router.get('/me', protect, async (req, res) => {
+  try {
+    res.status(200).json({
+      success: true,
+      data: req.user
+    });
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+module.exports = router;
