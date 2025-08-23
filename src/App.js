@@ -17,6 +17,9 @@ import RealTimeDashboards from './components/RealTimeDashboards';
 import AuthSystem from './components/AuthSystem'; 
 import CrowdsourcedDataCollection from './components/CrowdsourcedDataCollection';
 import EnvironmentalDashboards from './components/EnvironmentalDashboards';
+import Profile from './components/profile';
+import MyContribution from './components/MyContribution';
+
 
 function App() {
   return (
@@ -43,6 +46,8 @@ function App() {
           
           {/* <Route path="/signup" element={<SignUp />} /> */}
           <Route path="/login" element={<AuthSystem />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/my-contribution" element={<MyContribution />} />
         </Routes>
         <Footer />
       </div>
