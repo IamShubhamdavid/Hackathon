@@ -4,7 +4,17 @@ import React, { useState } from 'react';
 const CollaborationPortal = () => {
   const [activeTab, setActiveTab] = useState('projects');
   const [projectFilter, setProjectFilter] = useState('all');
-
+  const [showJoinForm, setShowJoinForm] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [joinFormData, setJoinFormData] = useState({
+    name: '',
+    email: '',
+    role: 'volunteer',
+    message: '',
+    expertise: ''
+  });
+  const [joinRequests, setJoinRequests] = useState([]);
+  const [ngoFilter, setNgoFilter] = useState('all');
   // Famous environmental collaborations
   const majorCollaborations = [
     {
@@ -161,6 +171,64 @@ const CollaborationPortal = () => {
     }
   ];
 
+  // NGO Types Directory
+  const ngoTypes = [
+    {
+      id: 1,
+      name: "Conservation NGOs",
+      description: "Organizations focused on protecting and restoring natural ecosystems, wildlife, and biodiversity.",
+      examples: ["World Wildlife Fund (WWF)", "The Nature Conservancy", "Conservation International"],
+      focusAreas: ["Wildlife protection", "Habitat restoration", "Biodiversity conservation"],
+      projects: 350,
+      icon: "fas fa-tree"
+    },
+    {
+      id: 2,
+      name: "Climate Action NGOs",
+      description: "Organizations dedicated to addressing climate change through mitigation, adaptation, and policy advocacy.",
+      examples: ["350.org", "Climate Reality Project", "Union of Concerned Scientists"],
+      focusAreas: ["Carbon reduction", "Renewable energy", "Climate policy"],
+      projects: 280,
+      icon: "fas fa-cloud-sun"
+    },
+    {
+      id: 3,
+      name: "Environmental Justice NGOs",
+      description: "Organizations working to ensure fair treatment and meaningful involvement of all people regarding environmental policies.",
+      examples: ["Greenpeace", "NRDC", "Environmental Defense Fund"],
+      focusAreas: ["Community advocacy", "Policy reform", "Rights protection"],
+      projects: 190,
+      icon: "fas fa-scale-balanced"
+    },
+    {
+      id: 4,
+      name: "Marine Conservation NGOs",
+      description: "Organizations focused on protecting ocean ecosystems and marine life.",
+      examples: ["Oceana", "Sea Shepherd", "Marine Conservation Institute"],
+      focusAreas: ["Ocean pollution", "Marine protected areas", "Sustainable fishing"],
+      projects: 125,
+      icon: "fas fa-water"
+    },
+    {
+      id: 5,
+      name: "Sustainable Development NGOs",
+      description: "Organizations promoting sustainable practices that meet human needs while preserving the environment.",
+      examples: ["World Resources Institute", "UN Sustainable Development Solutions Network", "ICLEI"],
+      focusAreas: ["Sustainable cities", "Green economy", "Resource management"],
+      projects: 220,
+      icon: "fas fa-leaf"
+    },
+    {
+      id: 6,
+      name: "Environmental Research NGOs",
+      description: "Organizations conducting scientific research to inform environmental policy and practice.",
+      examples: ["World Resources Institute", "Stockholm Environment Institute", "Earthwatch Institute"],
+      focusAreas: ["Climate science", "Ecological research", "Policy analysis"],
+      projects: 175,
+      icon: "fas fa-flask"
+    }
+  ];
+
   const filteredProjects = projectFilter === 'all' 
     ? projects 
     : projects.filter(project => project.category === projectFilter);
@@ -179,7 +247,7 @@ const CollaborationPortal = () => {
             borderBottom: '2px solid #ddd',
             marginBottom: '30px'
           }}>
-            {['projects', 'collaborations', 'funding', 'directory'].map(tab => (
+            {['projects', 'collaborations', 'funding', 'directory','ngos'].map(tab => (
               <button
                 key={tab}
                 className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
@@ -342,6 +410,9 @@ const CollaborationPortal = () => {
                       </div>
                     </div>
                   ))}
+
+
+
                 </div>
               </div>
             )}
@@ -733,6 +804,204 @@ const CollaborationPortal = () => {
                 </div>
               </div>
             )}
+
+            {activeTab === 'ngos' && (
+                <div className="ngos-tab">
+                  <h3 style={{ color: 'var(--primary)', marginBottom: '30px' }}>Environmental NGO Types</h3>
+                  <p style={{ marginBottom: '30px', textAlign: 'center', maxWidth: '800px', margin: '0 auto 40px' }}>
+                    Explore the diverse landscape of non-governmental organizations working on environmental issues. 
+                    Each type brings unique expertise and approaches to addressing our planet's challenges.
+                  </p>
+                  
+                  <div className="ngo-types-grid" style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', 
+                    gap: '30px'
+                  }}>
+                    {ngoTypes.map(ngo => (
+                      <div key={ngo.id} className="ngo-type-card" style={{
+                        background: 'white',
+                        borderRadius: '15px',
+                        padding: '30px',
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
+                        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column'
+                      }}>
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          marginBottom: '20px' 
+                        }}>
+                          <div style={{
+                            width: '60px',
+                            height: '60px',
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            fontSize: '24px',
+                            marginRight: '15px',
+                            flexShrink: 0
+                          }}>
+                            <i className={ngo.icon}></i>
+                          </div>
+                          <h4 style={{ color: 'var(--primary)', margin: 0 }}>{ngo.name}</h4>
+                        </div>
+                        
+                        <p style={{ 
+                          marginBottom: '20px', 
+                          color: '#555',
+                          flex: 1
+                        }}>
+                          {ngo.description}
+                        </p>
+                        
+                        <div style={{ marginBottom: '20px' }}>
+                          <h5 style={{ 
+                            marginBottom: '10px', 
+                            color: 'var(--dark)',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}>
+                            <i className="fas fa-bullseye" style={{ marginRight: '8px', color: 'var(--primary)' }}></i>
+                            Focus Areas
+                          </h5>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                            {ngo.focusAreas.map((area, index) => (
+                              <span key={index} style={{
+                                background: 'rgba(26, 107, 138, 0.1)',
+                                color: 'var(--primary)',
+                                padding: '4px 12px',
+                                borderRadius: '15px',
+                                fontSize: '0.85rem'
+                              }}>
+                                {area}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div style={{ marginBottom: '20px' }}>
+                          <h5 style={{ 
+                            marginBottom: '10px', 
+                            color: 'var(--dark)',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}>
+                            <i className="fas fa-building" style={{ marginRight: '8px', color: 'var(--primary)' }}></i>
+                            Example Organizations
+                          </h5>
+                          <p style={{ fontSize: '0.9rem', color: '#666' }}>
+                            {ngo.examples.join(', ')}
+                          </p>
+                        </div>
+                        
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginTop: 'auto',
+                          paddingTop: '15px',
+                          borderTop: '1px solid #eee'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <i className="fas fa-project-diagram" style={{ marginRight: '8px', color: 'var(--primary)' }}></i>
+                            <span>{ngo.projects}+ projects</span>
+                          </div>
+                          <button className="btn" style={{ padding: '8px 20px', fontSize: '0.9rem' }}>
+                            Explore NGOs
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div style={{ 
+                    marginTop: '50px', 
+                    background: 'white', 
+                    borderRadius: '15px', 
+                    padding: '30px',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.08)'
+                  }}>
+                    <h4 style={{ marginBottom: '20px', color: 'var(--primary)' }}>Partner with Environmental NGOs</h4>
+                    <p style={{ marginBottom: '25px' }}>
+                    EcoHarmony facilitates connections between organizations and NGOs working on environmental issues. 
+                    Whether you're looking to collaborate, fund, or volunteer, we can help you find the right partnership.
+                    </p>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                      <div style={{ textAlign: 'center', padding: '20px' }}>
+                        <div style={{
+                          width: '70px',
+                          height: '70px',
+                          background: 'rgba(58, 155, 124, 0.1)',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          margin: '0 auto 20px',
+                          fontSize: '24px',
+                          color: 'var(--secondary)'
+                        }}>
+                          <i className="fas fa-hands-helping"></i>
+                        </div>
+                        <h5>Collaboration Opportunities</h5>
+                        <p>Find NGOs with complementary expertise for your projects</p>
+                      </div>
+                      
+                      <div style={{ textAlign: 'center', padding: '20px' }}>
+                        <div style={{
+                          width: '70px',
+                          height: '70px',
+                          background: 'rgba(26, 107, 138, 0.1)',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          margin: '0 auto 20px',
+                          fontSize: '24px',
+                          color: 'var(--primary)'
+                        }}>
+                          <i className="fas fa-donate"></i>
+                        </div>
+                        <h5>Funding & Grants</h5>
+                        <p>Discover funding opportunities for NGO partnerships</p>
+                      </div>
+                      
+                      <div style={{ textAlign: 'center', padding: '20px' }}>
+                        <div style={{
+                          width: '70px',
+                          height: '70px',
+                          background: 'rgba(255, 154, 118, 0.1)',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          margin: '0 auto 20px',
+                          fontSize: '24px',
+                          color: 'var(--accent)'
+                        }}>
+                          <i className="fas fa-hands"></i>
+                        </div>
+                        <h5>Volunteer Programs</h5>
+                        <p>Connect with NGO volunteer opportunities worldwide</p>
+                      </div>
+                    </div>
+                    
+                    <div style={{ textAlign: 'center', marginTop: '30px' }}>
+                      <button className="btn" style={{ padding: '12px 40px', fontSize: '1.1rem' }}>
+                        <i className="fas fa-search" style={{ marginRight: '10px' }}></i>
+                        Find NGO Partners
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
           </div>
         </div>
       </div>
