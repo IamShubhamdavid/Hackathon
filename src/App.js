@@ -19,13 +19,17 @@ import CrowdsourcedDataCollection from './components/CrowdsourcedDataCollection'
 import EnvironmentalDashboards from './components/EnvironmentalDashboards';
 import Profile from './components/profile';
 import MyContribution from './components/MyContribution';
+import ApiTest from './components/ApiTest';
+import { AuthProvider } from './context/AuthContext';
 
 
 function App() {
   return (
-    <Router>
-      <div className="App">
-        <Header />
+    <AuthProvider>
+      <Router>
+        <div className="App">
+          <ApiTest />
+          <Header />
         <Routes>
           <Route path="/" element={
             <>
@@ -50,8 +54,9 @@ function App() {
           <Route path="/my-contribution" element={<MyContribution />} />
         </Routes>
         <Footer />
-      </div>
-    </Router>
+        </div>
+      </Router>
+    </AuthProvider>
   );
 }
 

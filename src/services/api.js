@@ -1,5 +1,5 @@
 // API service layer for handling HTTP requests to the backend
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = 'http://localhost:3000/api';
 
 class ApiService {
   constructor() {
@@ -17,13 +17,20 @@ class ApiService {
 
   // Helper method to handle API responses
   async handleResponse(response) {
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'API request failed');
+    try {
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return data;
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new Error('Invalid response from server');
+      }
+      throw error;
     }
-    
-    return data;
   }
 
   // Authentication endpoints
@@ -49,17 +56,29 @@ class ApiService {
         headers: this.getAuthHeaders(),
         body: JSON.stringify(credentials)
       });
-      
+
       const data = await this.handleResponse(response);
-      
+
       // Store token in localStorage
       if (data.success && data.data.token) {
         localStorage.setItem('authToken', data.data.token);
       }
-      
+
       return data;
     } catch (error) {
       console.error('Login error:', error);
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        apiUrl: `${this.baseURL}/auth/login`
+      });
+
+      // Handle specific error types
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error(`Unable to connect to server at ${this.baseURL}. Please check if the backend is running.`);
+      }
+
       throw error;
     }
   }
@@ -135,6 +154,19 @@ class ApiService {
       return await this.handleResponse(response);
     } catch (error) {
       console.error('Get user contributions error:', error);
+      throw error;
+    }
+  }
+
+  // Test API connection
+  async testConnection() {
+    try {
+      const response = await fetch(`${this.baseURL}/health`);
+      const data = await response.json();
+      console.log('API connection test successful:', data);
+      return data;
+    } catch (error) {
+      console.error('API connection test failed:', error);
       throw error;
     }
   }

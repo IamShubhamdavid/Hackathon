@@ -11,6 +11,10 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
+        // First test API connection
+        await apiService.testConnection();
+        console.log('API connection successful');
+
         const token = apiService.getToken();
         if (token) {
           // Try to get current user from backend
