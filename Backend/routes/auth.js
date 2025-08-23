@@ -1,7 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const User = require('../Models');
+const User = require('../Models/User');
 const { sendVerificationEmail } = require('../utils/emailService');
 const { protect } = require('../middleware/auth');
 const router = express.Router();
@@ -36,13 +36,14 @@ router.post('/register', async (req, res) => {
       userType
     });
 
-    // Generate verification token
-    const verificationToken = crypto.randomBytes(20).toString('hex');
-    user.verificationToken = verificationToken;
+    // For demo purposes, skip email verification
+    user.isVerified = true;
     await user.save();
 
-    // Send verification email
-    await sendVerificationEmail(user, verificationToken);
+    // TODO: Uncomment for production with proper email setup
+    // const verificationToken = crypto.randomBytes(20).toString('hex');
+    // user.verificationToken = verificationToken;
+    // await sendVerificationEmail(user, verificationToken);
 
     res.status(201).json({
       success: true,
@@ -175,6 +176,60 @@ router.get('/me', protect, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error'
+    });
+  }
+});
+
+// Update User Profile
+router.put('/profile', protect, async (req, res) => {
+  try {
+    const { firstName, lastName, email, userType } = req.body;
+
+    // Check if email is being changed and if it already exists
+    if (email !== req.user.email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email already exists'
+        });
+      }
+    }
+
+    // Update user
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        firstName,
+        lastName,
+        email,
+        userType
+      },
+      {
+        new: true,
+        runValidators: true
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: {
+        id: updatedUser._id,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        email: updatedUser.email,
+        userType: updatedUser.userType,
+        isVerified: updatedUser.isVerified,
+        createdAt: updatedUser.createdAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error during profile update'
     });
   }
 });

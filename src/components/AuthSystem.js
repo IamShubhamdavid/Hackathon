@@ -1898,6 +1898,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
+import apiService from '../services/api';
 
 const AuthSystem = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -2001,44 +2002,69 @@ const AuthSystem = () => {
   };
 
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (validateForm()) {
-      // In a real application, you would send this data to your backend
-      console.log('Form data:', formData);
-      
-      // Show success message
-      setSuccessMessage(isLogin ? 'Login successful!' : 'Account created successfully!');
-      
-      // After successful login/signup, redirect to homepage
-      setTimeout(() => {
-        setSuccessMessage('');
-        
-        if (isLogin) {
-          // Redirect to homepage after login
 
-          login({
-            firstName: formData.firstName || 'User',
-            lastName: formData.lastName || '',
+    if (validateForm()) {
+      try {
+        if (isLogin) {
+          // Login API call
+          setSuccessMessage('Logging in...');
+          const response = await apiService.login({
             email: formData.email,
+            password: formData.password
+          });
+
+          if (response.success) {
+            // Set user data in auth context
+            login({
+              id: response.data.user.id,
+              firstName: response.data.user.firstName,
+              lastName: response.data.user.lastName,
+              email: response.data.user.email,
+              userType: response.data.user.userType,
+              joinedDate: response.data.user.createdAt ? new Date(response.data.user.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+            });
+
+            setSuccessMessage('Login successful!');
+            setTimeout(() => {
+              navigate('/profile');
+            }, 1500);
+          }
+        } else {
+          // Register API call
+          setSuccessMessage('Creating account...');
+          const response = await apiService.register({
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            password: formData.password,
             userType: formData.userType
           });
 
-          navigate('/');
-        } else {
-          // For signup, switch to login mode and clear form
-          setIsLogin(true);
-          setFormData({
-            firstName: '',
-            lastName: '',
-            email: '',
-            password: '',
-            confirmPassword: '',
-            userType: 'citizen'
-          });
+          if (response.success) {
+            setSuccessMessage('Account created successfully! Please check your email for verification.');
+
+            // Clear form and switch to login mode
+            setTimeout(() => {
+              setFormData({
+                firstName: '',
+                lastName: '',
+                email: '',
+                password: '',
+                confirmPassword: '',
+                userType: 'citizen'
+              });
+              setIsLogin(true);
+              setSuccessMessage('');
+            }, 3000);
+          }
         }
-      }, 3000);
+      } catch (error) {
+        console.error('Authentication error:', error);
+        setErrors({ submit: error.message || 'Authentication failed. Please try again.' });
+        setSuccessMessage('');
+      }
     }
   };
 
@@ -2449,7 +2475,21 @@ const AuthSystem = () => {
                 </div>
               </div>
             )}
-            
+
+            {errors.submit && (
+              <div style={{
+                padding: '12px 15px',
+                background: '#fff5f5',
+                color: '#e74c3c',
+                borderRadius: '8px',
+                marginBottom: '20px',
+                fontSize: '0.9rem',
+                border: '1px solid #f5c6cb'
+              }}>
+                {errors.submit}
+              </div>
+            )}
+
             <button
               type="submit"
               style={{
